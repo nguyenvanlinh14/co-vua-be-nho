@@ -37,7 +37,7 @@ Thế giới sau mở khi xong một nửa thế giới trước. Bố mẹ mu�
 
 ## Kỹ thuật
 
-- Web tĩnh thuần HTML/CSS/JS (không cần build), chạy trên GitHub Pages miễn phí.
+- Web tĩnh thuần HTML/CSS/JS, build & deploy tự động trên cloud bằng GitHub Actions (`.github/workflows/deploy.yml`): mỗi lần push lên `main`, máy chủ GitHub chạy kiểm chứng bài tập rồi mới đưa lên GitHub Pages (miễn phí).
 - Luật cờ: [chess.js](https://github.com/jhlywa/chess.js) (BSD-2, kèm trong `vendor/`).
 - Máy đánh: negamax + alpha-beta có giới hạn thời gian (`js/engine.js`).
 - Giọng đọc: 174 file `audio/*.m4a` tạo sẵn bằng Gemini TTS, tra theo câu trong `audio/manifest.json`; câu nào thiếu thì dùng giọng máy của trình duyệt.
