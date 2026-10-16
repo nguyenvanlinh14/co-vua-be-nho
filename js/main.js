@@ -2,7 +2,8 @@ import { Chess } from '../vendor/chess.js';
 import { WORLDS, BOTS } from './lessons.js';
 import { targets, sq as mkSq, FILES } from './stars.js';
 import { bestMove, mateIn } from './engine.js';
-import { sound, speak, store, confetti, toggleVoice, voiceEnabled } from './fx.js';
+import { sound, speak, stopSpeaking, store, confetti, toggleVoice, voiceEnabled } from './fx.js';
+import { say as S } from './phrases.js';
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const GLYPH = { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' };
@@ -204,17 +205,16 @@ function runSlide(step, ui) {
 
 function runFind(step, ui) {
   let wrong = 0;
-  const say = `Con hãy chạm vào ô ${step.square.toUpperCase()}!`;
-  ui.say(say);
+  ui.say(S.findAsk(step.square));
   const draw = (extra = {}) => ui.area.replaceChildren(renderBoard({ pieces: {}, onTap, ...extra }));
   function onTap(s) {
     if (s === step.square) {
       draw({ marks: [s] });
-      ui.success(`Đúng rồi! Đó là ô ${s.toUpperCase()}.`);
+      ui.success(S.findRight(s));
       return;
     }
     wrong++;
-    ui.oops(`Đó là ô ${s.toUpperCase()}. Tìm chữ ${step.square[0].toUpperCase()} ở dưới và số ${step.square[1]} ở bên nhé!`);
+    ui.oops(S.findWrong(step.square));
     // Gợi ý: sáng cả cột và hàng.
     const hints = [];
     for (let k = 0; k < 8; k++) { hints.push(step.square[0] + (k + 1)); hints.push(FILES[k] + step.square[1]); }
@@ -244,11 +244,8 @@ function runStars(step, ui) {
   let at = step.from, piece = step.piece, pop = null;
   const left = new Set(step.stars);
   const enemies = { ...(step.enemies || {}) };
-  const names = { r: 'Xe', b: 'Tượng', q: 'Hậu', k: 'Vua', n: 'Mã', p: 'Tốt' };
   const count = () => left.size + Object.keys(enemies).length;
-  const intro = step.stars.length
-    ? `${names[piece]} ơi, đi ăn hết ${count() > 1 ? count() + ' ' : ''}${Object.keys(enemies).length ? 'món' : 'ngôi sao'} nào! Chạm vào chấm xanh để đi.`
-    : `${names[piece]} ơi, ăn quân đen đi! Chạm vào ô có vòng xanh.`;
+  const intro = S.starsIntro(step);
   ui.say(intro);
   const moves = () => targets(piece, at, (s) => rocks.has(s), (s) => s in enemies);
   function draw() {
@@ -262,7 +259,7 @@ function runStars(step, ui) {
   }
   function onTap(s) {
     if (s === at) return;
-    if (!moves().includes(s)) { sound.bad(); ui.say(`${names[piece]} không đi tới ô đó được. Nhìn các chấm xanh nhé!`, 'bad'); return; }
+    if (!moves().includes(s)) { sound.bad(); ui.say(S.starsBlocked(piece), 'bad'); return; }
     at = s; pop = s;
     const got = left.delete(s) || (s in enemies && delete enemies[s]);
     if (got) sound.collect(); else sound.move();
@@ -382,7 +379,7 @@ function runPuzzle(step, ui) {
         const r = game.move(bestMove(game, 3));
         state.last = [r.from, r.to]; state.busy = false; sound.move();
         redraw();
-        ui.say(`Còn ${maxMoves - used} nước để chiếu hết!`, '', true);
+        ui.say(S.mateLeft(maxMoves - used), '', true);
       }, 400);
     }
   }
@@ -436,7 +433,7 @@ function runPlay(step, ui) {
   }
   function onMove(m) {
     if (step.goal === 'promote' && m.promotion) { state.over = true; redraw(); return ui.success('Tốt về đích thành Hậu rồi!'); }
-    if (game.isCheckmate()) { state.over = true; redraw(); sound.win(); return ui.success(`CHIẾU HẾT! Con thắng ${bot.name} rồi!`); }
+    if (game.isCheckmate()) { state.over = true; redraw(); sound.win(); return ui.success(S.botWin(bot)); }
     if (game.isGameOver()) return lose(game.isStalemate() ? 'Hoà pat! Vua đen hết đường đi mà không bị chiếu. Nhớ chừa ô cho Vua đen nhé!' : 'Hoà rồi! Thử lại nhé.');
     state.busy = true;
     ui.say(`${bot.emoji} ${bot.name} đang nghĩ...`, '', false);
@@ -444,7 +441,7 @@ function runPlay(step, ui) {
       const r = game.move(bestMove(game, step.bot));
       state.last = [r.from, r.to]; state.busy = false; sound.move();
       redraw();
-      if (game.isCheckmate()) return lose(`Ôi, ${bot.name} chiếu hết rồi! Không sao, chơi lại nhé!`);
+      if (game.isCheckmate()) return lose(S.botLose(bot));
       if (game.isGameOver()) return lose('Hoà rồi! Thử lại nhé.');
       if (step.goal === 'promote' && r.captured === 'p') return lose('Tốt bị ăn mất rồi! Thử lại nhé.');
       ui.say(game.inCheck() ? 'Cẩn thận! Vua con đang bị chiếu!' : 'Đến lượt con!', game.inCheck() ? 'bad' : '', game.inCheck());
@@ -518,7 +515,7 @@ function showModal(...kids) { $('modal-card').replaceChildren(...kids); $('modal
 function hideModal() { $('modal').classList.add('hidden'); }
 
 // ---------------- Khởi động ----------------
-$('btn-home').addEventListener('click', () => { try { speechSynthesis.cancel(); } catch { /* */ } hideModal(); showMap(); });
+$('btn-home').addEventListener('click', () => { stopSpeaking(); hideModal(); showMap(); });
 const vb = $('btn-voice');
 vb.textContent = voiceEnabled() ? '🔊' : '🔇';
 vb.addEventListener('click', () => { vb.textContent = toggleVoice() ? '🔊' : '🔇'; });

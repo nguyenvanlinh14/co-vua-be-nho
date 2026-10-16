@@ -1,3 +1,5 @@
+import { speechKey } from './phrases.js';
+
 // Âm thanh, giọng đọc, pháo giấy, lưu tiến độ.
 
 let ctx = null;
@@ -34,19 +36,41 @@ export const store = {
 };
 
 let voiceOn = store.get('voice', true);
+
+// Giọng Cú Mèo tạo sẵn bằng Gemini TTS (tools/tts.mjs). Thiếu file thì dùng giọng máy.
+let voiceFiles = {};
+fetch('audio/manifest.json').then((r) => (r.ok ? r.json() : {})).then((m) => { voiceFiles = m.files || {}; }).catch(() => {});
+let playing = null;
+function stopAll() {
+  if (playing) { playing.pause(); playing = null; }
+  try { speechSynthesis.cancel(); } catch { /* bỏ qua */ }
+}
+
 export function voiceEnabled() { return voiceOn; }
 export function toggleVoice() {
   voiceOn = !voiceOn;
   store.set('voice', voiceOn);
-  if (!voiceOn) try { speechSynthesis.cancel(); } catch { /* bỏ qua */ }
+  if (!voiceOn) stopAll();
   return voiceOn;
 }
+export function stopSpeaking() { stopAll(); }
 export function speak(text) {
-  if (!voiceOn || !('speechSynthesis' in window)) return;
+  if (!voiceOn) return;
+  stopAll();
+  const key = speechKey(text);
+  const file = voiceFiles[key];
+  if (file) {
+    const a = new Audio('audio/' + file);
+    playing = a;
+    a.play().catch(() => { if (playing === a) robotSpeak(key); });
+    return;
+  }
+  robotSpeak(key);
+}
+function robotSpeak(text) {
+  if (!('speechSynthesis' in window)) return;
   try {
-    speechSynthesis.cancel();
-    const clean = text.replace(/[\p{Extended_Pictographic}️♔-♟]/gu, '');
-    const u = new SpeechSynthesisUtterance(clean);
+    const u = new SpeechSynthesisUtterance(text);
     u.lang = 'vi-VN';
     u.rate = 0.95;
     const vi = speechSynthesis.getVoices().find((v) => v.lang && v.lang.toLowerCase().startsWith('vi'));

@@ -9,7 +9,8 @@ Web học cờ vua cho bé ~6 tuổi (thiết kế thân thiện với trẻ ADH
 - **Bài siêu ngắn**: mỗi bài 3–6 bước, 2–4 phút.
 - **Một việc mỗi màn hình**: chỉ một câu hướng dẫn, nút to, chấm xanh chỉ ô đi được.
 - **Phản hồi tức thì**: âm thanh, pháo giấy, sao thưởng; sai thì động viên nhẹ và cho thử lại ngay.
-- **Giọng đọc tiếng Việt** (Cú Mèo đọc hướng dẫn, bé chưa cần đọc giỏi) – bật/tắt bằng nút 🔊.
+- **Giọng Cú Mèo tự nhiên** (tạo sẵn bằng Gemini TTS, giọng ấm, chậm, vui) đọc mọi hướng dẫn – bé chưa cần đọc giỏi. Bật/tắt bằng nút 🔊.
+- **Quân cờ to gần kín ô**, dễ nhìn, dễ chạm trên điện thoại/máy tính bảng.
 - **Nhắc nghỉ** sau ~12 phút: uống nước, vươn vai.
 - **Gợi ý 2 nấc**: sáng quân cần đi → sáng cả ô đích.
 - Luôn được ít nhất 1 sao, làm lại để lên 3 sao.
@@ -39,6 +40,9 @@ Thế giới sau mở khi xong một nửa thế giới trước. Bố mẹ mu�
 - Web tĩnh thuần HTML/CSS/JS (không cần build), chạy trên GitHub Pages miễn phí.
 - Luật cờ: [chess.js](https://github.com/jhlywa/chess.js) (BSD-2, kèm trong `vendor/`).
 - Máy đánh: negamax + alpha-beta có giới hạn thời gian (`js/engine.js`).
+- Giọng đọc: 174 file `audio/*.m4a` tạo sẵn bằng Gemini TTS, tra theo câu trong `audio/manifest.json`; câu nào thiếu thì dùng giọng máy của trình duyệt.
+  Tạo lại / bổ sung khi sửa câu chữ (key chỉ dùng trên máy, **không** đưa vào repo):
+  `GEMINI_API_KEY=... node tools/tts.mjs` (macOS, cần `afconvert`). Mỗi file được Gemini nghe lại để chắc đọc đúng lời.
 - Tiến độ lưu trong trình duyệt (localStorage) của máy bé dùng.
 - Kiểm chứng toàn bộ bài tập (nước hợp lệ, chiếu hết thật, bài sao giải được): `node tools/verify.mjs`
 - Chạy thử trên máy: `python3 -m http.server 8000` rồi mở http://localhost:8000
